@@ -1,6 +1,6 @@
 /**
- * 应用配置到项目
- * Apply configuration to project
+ * 应用配置到原生Android和iOS项目
+ * Apply configuration to native Android and iOS projects
  */
 
 const fs = require('fs');
@@ -8,63 +8,75 @@ const path = require('path');
 const { getCurrentConfig, getConfigValue } = require('./read-config');
 
 /**
- * 生成运行时配置文件
+ * 生成Android配置文件
  */
-function generateRuntimeConfig(config) {
-  const runtimeConfigPath = path.join(__dirname, '../src/config/runtime.config.ts');
+function generateAndroidConfig(config) {
+  const androidConfigPath = path.join(__dirname, '../android/app/src/main/java/com/webviewapp/AppConfig.kt');
   
-  // 确保目录存在
-  const configDir = path.dirname(runtimeConfigPath);
-  if (!fs.existsSync(configDir)) {
-    fs.mkdirSync(configDir, { recursive: true });
-  }
-  
-  const content = `/**
- * 运行时配置文件
- * 此文件由 scripts/apply-config.js 自动生成
- * 请勿手动修改！
- */
+  const content = `package com.webviewapp
 
-export const AppConfig = {
-  // 应用基本信息
-  appName: '${config.appName || 'MyWebView'}',
-  appDisplayName: '${config.appDisplayName || config.appName || 'MyWebView'}',
-  appVersion: '${config.appVersion || '1.0.0'}',
-  buildNumber: ${getConfigValue(config, 'buildNumber', 1)},
-  
-  // WebView配置
-  loadUrl: '${config.loadUrl || 'https://www.baidu.com'}',
-  enableJavaScript: ${getConfigValue(config, 'enableJavaScript', true)},
-  enableDOMStorage: ${getConfigValue(config, 'enableDOMStorage', true)},
-  enableCache: ${getConfigValue(config, 'enableCache', true)},
-  
-  // Loading页面配置
-  loadingDuration: ${getConfigValue(config, 'loadingDuration', 1000)},
-  loadingBackgroundColor: '${config.loadingBackgroundColor || '#4A90E2'}',
-  
-  // 调试模式
-  isDebug: ${getConfigValue(config, 'isDebug', false)},
-};
-
-export default AppConfig;
+// 此文件由 scripts/apply-config.js 自动生成，请勿手动修改！
+object AppConfig {
+    var appName: String = "${config.appName || 'WebView App'}"
+    var loadUrl: String = "${config.loadUrl || 'https://www.baidu.com'}"
+    var loadingDuration: Long = ${getConfigValue(config, 'loadingDuration', 1000)}
+    var loadingBackgroundColor: String = "${config.loadingBackgroundColor || '#4A90E2'}"
+    var enableJavaScript: Boolean = ${getConfigValue(config, 'enableJavaScript', true)}
+    var enableDOMStorage: Boolean = ${getConfigValue(config, 'enableDOMStorage', true)}
+    var enableCache: Boolean = ${getConfigValue(config, 'enableCache', true)}
+    
+    fun parseColor(colorString: String): Int {
+        return try {
+            android.graphics.Color.parseColor(colorString)
+        } catch (e: Exception) {
+            android.graphics.Color.parseColor("#4A90E2")
+        }
+    }
+}
 `;
   
-  fs.writeFileSync(runtimeConfigPath, content, 'utf-8');
-  console.log('✅ 生成运行时配置文件: src/config/runtime.config.ts');
+  fs.writeFileSync(androidConfigPath, content, 'utf-8');
+  console.log('✅ 生成Android配置文件');
 }
 
 /**
- * 更新 app.json
+ * 生成iOS配置文件
  */
-function updateAppJson(config) {
-  const appJsonPath = path.join(__dirname, '../app.json');
-  const appJson = JSON.parse(fs.readFileSync(appJsonPath, 'utf-8'));
+function generateIOSConfig(config) {
+  const iosConfigPath = path.join(__dirname, '../ios/WebViewApp/AppConfig.swift');
   
-  appJson.name = config.appDisplayName || config.appName || appJson.name;
-  appJson.displayName = config.appDisplayName || config.appName || appJson.displayName;
+  const loadingDurationSeconds = (getConfigValue(config, 'loadingDuration', 1000) / 1000).toFixed(1);
   
-  fs.writeFileSync(appJsonPath, JSON.stringify(appJson, null, 2), 'utf-8');
-  console.log('✅ 更新 app.json');
+  const content = `import Foundation
+import UIKit
+
+// 此文件由 scripts/apply-config.js 自动生成，请勿手动修改！
+class AppConfig {
+    static var appName: String = "${config.appName || 'WebView App'}"
+    static var loadUrl: String = "${config.loadUrl || 'https://www.baidu.com'}"
+    static var loadingDuration: TimeInterval = ${loadingDurationSeconds}
+    static var loadingBackgroundColor: String = "${config.loadingBackgroundColor || '#4A90E2'}"
+    static var enableJavaScript: Bool = ${getConfigValue(config, 'enableJavaScript', true) ? 'true' : 'false'}
+    static var enableCache: Bool = ${getConfigValue(config, 'enableCache', true) ? 'true' : 'false'}
+    
+    static func parseColor(_ hexString: String) -> UIColor {
+        var hex = hexString.trimmingCharacters(in: .whitespacesAndNewlines)
+        hex = hex.replacingOccurrences(of: "#", with: "")
+        
+        var rgb: UInt64 = 0
+        Scanner(string: hex).scanHexInt64(&rgb)
+        
+        let red = CGFloat((rgb & 0xFF0000) >> 16) / 255.0
+        let green = CGFloat((rgb & 0x00FF00) >> 8) / 255.0
+        let blue = CGFloat(rgb & 0x0000FF) / 255.0
+        
+        return UIColor(red: red, green: green, blue: blue, alpha: 1.0)
+    }
+}
+`;
+  
+  fs.writeFileSync(iosConfigPath, content, 'utf-8');
+  console.log('✅ 生成iOS配置文件');
 }
 
 /**
@@ -111,9 +123,11 @@ function updateAndroidConfig(config) {
   
   // 更新 strings.xml
   const stringsXmlPath = path.join(__dirname, '../android/app/src/main/res/values/strings.xml');
-  const appName = config.appDisplayName || config.appName || 'MyWebView';
-  const stringsXml = `<resources>
+  const appName = config.appDisplayName || config.appName || 'WebView App';
+  const stringsXml = `<?xml version="1.0" encoding="utf-8"?>
+<resources>
     <string name="app_name">${appName}</string>
+    <string name="loading">Loading...</string>
 </resources>
 `;
   
@@ -133,10 +147,10 @@ function updateIOSConfig(config) {
   }
   
   // 更新 Info.plist
-  const infoPlistPath = path.join(__dirname, '../ios/MyWebViewApp/Info.plist');
+  const infoPlistPath = path.join(__dirname, '../ios/WebViewApp/Info.plist');
   
   if (!fs.existsSync(infoPlistPath)) {
-    console.log('⚠️  未找到 Info.plist，跳过 iOS 配置');
+    console.log('⚠️  未找到 Info.plist');
     return;
   }
   
@@ -159,6 +173,14 @@ function updateIOSConfig(config) {
     );
   }
   
+  // 更新 CFBundleVersion
+  if (config.buildNumber) {
+    infoPlist = infoPlist.replace(
+      /<key>CFBundleVersion<\/key>\s*<string>[^<]*<\/string>/,
+      `<key>CFBundleVersion</key>\n\t<string>${config.buildNumber}</string>`
+    );
+  }
+  
   fs.writeFileSync(infoPlistPath, infoPlist, 'utf-8');
   console.log('✅ 更新 iOS Info.plist');
 }
@@ -169,17 +191,45 @@ function updateIOSConfig(config) {
 function copyAssets(config) {
   const sourceDir = path.join(__dirname, `../assets/${config.appFolderName}`);
   
-  // 复制 loading 图片
+  // 复制 loading 图片到 Android
   const loadingImageSrc = path.join(sourceDir, config.loadingImage || 'loading.png');
-  const loadingImageDest = path.join(__dirname, '../assets/loading.png');
+  const androidLoadingDest = path.join(__dirname, '../android/app/src/main/res/drawable/loading.png');
   
   if (fs.existsSync(loadingImageSrc)) {
-    fs.copyFileSync(loadingImageSrc, loadingImageDest);
-    console.log('✅ 复制 loading 图片');
+    fs.copyFileSync(loadingImageSrc, androidLoadingDest);
+    console.log('✅ 复制 loading 图片到 Android');
   }
   
-  // TODO: 复制应用图标到 Android 和 iOS 对应目录
-  // 这部分可以根据需要扩展，处理不同尺寸的图标
+  // 复制 loading 图片到 iOS (需要添加到Assets.xcassets)
+  // 这里简化处理，实际应该创建imageset
+  const iosAssetsDest = path.join(__dirname, '../ios/WebViewApp/Assets.xcassets/loading.imageset');
+  if (!fs.existsSync(iosAssetsDest)) {
+    fs.mkdirSync(iosAssetsDest, { recursive: true });
+  }
+  
+  if (fs.existsSync(loadingImageSrc)) {
+    fs.copyFileSync(loadingImageSrc, path.join(iosAssetsDest, 'loading.png'));
+    
+    // 创建Contents.json
+    const contentsJson = {
+      "images": [
+        {
+          "filename": "loading.png",
+          "idiom": "universal",
+          "scale": "1x"
+        }
+      ],
+      "info": {
+        "author": "xcode",
+        "version": 1
+      }
+    };
+    fs.writeFileSync(
+      path.join(iosAssetsDest, 'Contents.json'),
+      JSON.stringify(contentsJson, null, 2)
+    );
+    console.log('✅ 复制 loading 图片到 iOS');
+  }
 }
 
 /**
@@ -193,11 +243,11 @@ function main() {
     const config = getCurrentConfig();
     console.log('');
     
-    // 生成运行时配置
-    generateRuntimeConfig(config);
+    // 生成原生配置文件
+    generateAndroidConfig(config);
+    generateIOSConfig(config);
     
     // 更新项目配置
-    updateAppJson(config);
     updateAndroidConfig(config);
     updateIOSConfig(config);
     
@@ -222,8 +272,8 @@ if (require.main === module) {
 }
 
 module.exports = {
-  generateRuntimeConfig,
-  updateAppJson,
+  generateAndroidConfig,
+  generateIOSConfig,
   updateAndroidConfig,
   updateIOSConfig,
   copyAssets,
