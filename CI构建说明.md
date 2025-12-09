@@ -155,3 +155,22 @@ workflow 在以下情况触发：
 
 只有标签推送会创建 GitHub Release。
 
+## 优势
+
+1. **灵活性**：可以根据需要选择构建哪个平台，避免不必要的构建
+2. **效率提升**：跳过不需要的平台可以显著减少 CI 运行时间和成本
+3. **快速验证**：使用 Debug 模式可以快速验证构建流程，无需配置复杂的证书
+4. **渐进配置**：可以先用 Debug 模式验证流程，再逐步配置 Release 模式所需的证书
+5. **独立控制**：每个平台和构建模式可以独立配置，互不影响
+
+## 常见使用场景
+
+| 场景 | buildAndroid | buildIOS | isDebug | 说明 |
+|------|--------------|----------|---------|------|
+| 开发测试 Android | true | false | true | 快速构建 Android Debug APK |
+| 开发测试 iOS | false | true | true | 快速构建 iOS Debug App |
+| 正式发布 Android | true | false | false | 构建签名的 APK 和 AAB |
+| 正式发布 iOS | false | true | false | 构建签名的 IPA |
+| 同时发布两个平台 | true | true | false | 构建所有正式版本 |
+| CI 测试构建流程 | true | true | true | 验证构建流程，无需证书 |
+

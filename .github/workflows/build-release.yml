@@ -2,9 +2,6 @@ name: Build and Release
 
 on:
   push:
-    branches:
-      - main
-      - master
     tags:
       - 'v*'
 jobs:
@@ -15,7 +12,7 @@ jobs:
       build_android: ${{ steps.config.outputs.build_android }}
       build_ios: ${{ steps.config.outputs.build_ios }}
       is_debug: ${{ steps.config.outputs.is_debug }}
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -45,7 +42,7 @@ jobs:
     needs: check-config
     if: needs.check-config.outputs.build_android == 'true'
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -136,7 +133,7 @@ jobs:
     needs: check-config
     if: needs.check-config.outputs.build_ios == 'true'
     runs-on: macos-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -275,7 +272,7 @@ jobs:
     needs: [check-config, build-android, build-ios]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/') && !cancelled()
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
