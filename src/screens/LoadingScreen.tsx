@@ -9,6 +9,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
+import AppConfig from '../config/runtime.config';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Loading'>;
 
@@ -18,17 +19,20 @@ const LoadingScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
 
   useEffect(() => {
-    // 1秒后跳转到主页
+    // 根据配置设置跳转延迟
     const timer = setTimeout(() => {
       navigation.replace('Home');
-    }, 1000);
+    }, AppConfig.loadingDuration);
 
     return () => clearTimeout(timer);
   }, [navigation]);
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#4A90E2" />
+    <View style={[styles.container, { backgroundColor: AppConfig.loadingBackgroundColor }]}>
+      <StatusBar 
+        barStyle="light-content" 
+        backgroundColor={AppConfig.loadingBackgroundColor} 
+      />
       <Image
         source={require('../../assets/loading.png')}
         style={styles.image}
@@ -41,7 +45,6 @@ const LoadingScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#4A90E2',
     justifyContent: 'center',
     alignItems: 'center',
   },

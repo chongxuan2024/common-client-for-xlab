@@ -1,16 +1,66 @@
 # My WebView App
 
-一个基于React Native的WebView应用，支持Android和iOS平台。
+一个基于React Native的**通用WebView框架**，支持通过配置文件快速创建和管理多个不同的WebView应用。
 
-## 功能特性
+## 🌟 核心特性
 
-- ✨ 启动时显示Loading页面（1秒过渡动画）
-- 🌐 使用全屏WebView加载网页内容
-- 📱 支持Android和iOS双平台
-- 🤖 自动化CI/CD构建和发布
-- 📦 支持打包APK、AAB和IPA
+- ✨ **配置驱动**: 通过配置文件快速创建不同的应用，无需修改代码
+- 📁 **多应用管理**: 在一个项目中管理多个应用配置
+- 🚀 **快速切换**: 只需修改一个文件即可切换不同应用
+- 🌐 **全屏WebView**: 加载任何网页内容
+- 📱 **双平台支持**: 同时支持Android和iOS
+- 🤖 **自动化CI/CD**: GitHub Actions自动打包和发布
+- 📦 **灵活构建**: 支持打包APK、AAB和IPA
 
-## 快速开始
+## 🚀 快速开始
+
+### 方式1：使用现有配置（最快）
+
+```bash
+# 1. 安装依赖
+npm install
+
+# 2. 查看当前配置
+cat assets/build.app  # 默认是 app1
+cat assets/app1/app.cfg
+
+# 3. 应用配置
+npm run build:config
+
+# 4. 运行
+npm run android  # 或 npm run ios
+```
+
+### 方式2：创建新应用
+
+```bash
+# 1. 创建应用目录
+mkdir -p assets/my-app
+
+# 2. 创建配置文件
+cat > assets/my-app/app.cfg << 'EOF'
+appName=我的应用
+appDisplayName=MyApp
+appId=com.mycompany.myapp
+appVersion=1.0.0
+buildNumber=1
+buildAndroid=true
+buildIOS=true
+loadUrl=https://www.example.com
+loadingDuration=1000
+loadingBackgroundColor=#4A90E2
+EOF
+
+# 3. 添加资源文件（loading图片等）
+cp your-image.png assets/my-app/loading.png
+
+# 4. 指定要构建的应用
+echo "my-app" > assets/build.app
+
+# 5. 应用配置并运行
+npm run build:config
+npm run android
+```
 
 ### 环境要求
 
@@ -19,18 +69,6 @@
 - Java JDK 17（Android开发）
 - Xcode（iOS开发，仅Mac）
 - CocoaPods（iOS开发）
-
-### 安装依赖
-
-```bash
-# 安装Node依赖
-npm install
-
-# iOS依赖（仅Mac）
-cd ios
-pod install
-cd ..
-```
 
 ### 运行应用
 
@@ -58,37 +96,95 @@ npm run ios
 
 或使用Xcode打开`ios/MyWebViewApp.xcworkspace`运行。
 
-## 项目结构
+## 📁 项目结构
 
 ```
 MyWebViewApp/
+├── assets/                      # 🔥 应用配置和资源目录
+│   ├── build.app               # 🔥 当前构建的应用名称
+│   ├── app1/                   # 应用1配置
+│   │   ├── app.cfg            # 🔥 应用1配置文件
+│   │   ├── loading.png        # Loading图片
+│   │   ├── icon.png           # 应用图标
+│   │   └── README.md
+│   ├── app2/                   # 应用2配置
+│   │   ├── app.cfg
+│   │   └── ...
+│   └── ...                     # 更多应用配置
+├── scripts/                     # 🔥 配置处理脚本
+│   ├── read-config.js          # 读取配置
+│   └── apply-config.js         # 应用配置到项目
 ├── src/
+│   ├── config/                 # 🔥 运行时配置
+│   │   └── runtime.config.ts  # 自动生成的配置
 │   ├── screens/
-│   │   ├── LoadingScreen.tsx    # Loading页面
-│   │   └── HomeScreen.tsx       # WebView主页
-│   ├── navigation/
-│   │   ├── AppNavigator.tsx     # 导航配置
-│   │   └── types.ts             # 类型定义
-├── assets/
-│   └── loading.png              # Loading图片资源
-├── android/                      # Android原生代码
-├── ios/                         # iOS原生代码
-├── .github/
-│   └── workflows/
-│       └── build-release.yml    # CI/CD配置
-├── App.tsx                      # 应用入口
+│   │   ├── LoadingScreen.tsx  # Loading页面
+│   │   └── HomeScreen.tsx     # WebView主页
+│   └── navigation/
+│       ├── AppNavigator.tsx   # 导航配置
+│       └── types.ts           # 类型定义
+├── android/                    # Android原生代码
+├── ios/                       # iOS原生代码
+├── .github/workflows/
+│   └── build-release.yml      # CI/CD配置
+├── 配置文件说明.md             # 🔥 配置详细说明
+├── 多应用配置使用指南.md       # 🔥 使用指南
 └── package.json
 ```
 
-## 配置WebView URL
+**注**: 🔥 标记的是配置系统的核心文件
 
-要修改WebView加载的URL，编辑 `src/screens/HomeScreen.tsx`：
+## ⚙️ 配置系统
 
-```typescript
-<WebView
-  source={{ uri: 'https://www.baidu.com' }}  // 修改为您的URL
-  // ...
-/>
+### 修改应用配置
+
+**推荐方式**（无需修改代码）：
+
+编辑 `assets/app1/app.cfg`：
+
+```properties
+# 修改URL
+loadUrl=https://www.your-website.com
+
+# 修改应用名称
+appName=新应用名称
+
+# 修改loading时长
+loadingDuration=2000
+
+# 修改主题色
+loadingBackgroundColor=#FF6B6B
+```
+
+然后应用配置：
+
+```bash
+npm run build:config
+npm run android
+```
+
+### 切换不同应用
+
+```bash
+# 切换到app2
+echo "app2" > assets/build.app
+npm run build:config
+npm run android
+
+# 切换回app1
+echo "app1" > assets/build.app
+npm run build:config
+npm run android
+```
+
+### 查看当前配置
+
+```bash
+# 查看要构建的应用
+cat assets/build.app
+
+# 查看详细配置
+npm run config:check
 ```
 
 ## 构建发布版本
@@ -255,6 +351,80 @@ cd ..
 - **Android**: 已配置`usesCleartextTraffic`
 - **iOS**: 已配置`NSAllowsArbitraryLoads`（注意：App Store可能要求使用HTTPS）
 
+## 🎯 配置文件说明
+
+### 核心配置项
+
+| 配置项 | 说明 | 示例 |
+|-------|------|------|
+| `appName` | 应用中文名称 | `我的WebView` |
+| `appDisplayName` | 应用英文名称 | `MyWebView` |
+| `appId` | 应用包名/Bundle ID | `com.mycompany.app` |
+| `appVersion` | 版本号 | `1.0.0` |
+| `loadUrl` | 加载的URL | `https://www.baidu.com` |
+| `loadingDuration` | Loading停留时长(ms) | `1000` |
+| `loadingBackgroundColor` | Loading背景色 | `#4A90E2` |
+
+完整配置项说明请查看：[配置文件说明.md](./配置文件说明.md)
+
+### 实用脚本
+
+```bash
+# 查看当前配置
+npm run config:check
+
+# 应用配置到项目
+npm run build:config
+
+# 运行前自动应用配置
+npm run android  # 已集成 build:config
+npm run ios      # 已集成 build:config
+```
+
+## 📚 完整文档
+
+- **[配置文件说明.md](./配置文件说明.md)** - 所有配置项的详细说明
+- **[多应用配置使用指南.md](./多应用配置使用指南.md)** - 实用教程和最佳实践
+- **[快速开始.md](./快速开始.md)** - 5分钟快速入门
+- **[android打包说明.md](./android打包说明.md)** - Android打包详细教程
+- **[ios打包说明.md](./ios打包说明.md)** - iOS打包详细教程
+
+## 🎨 使用场景
+
+### 场景1：为不同客户定制应用
+
+```bash
+# 客户A
+assets/client-a/app.cfg  # loadUrl=https://client-a.com
+
+# 客户B  
+assets/client-b/app.cfg  # loadUrl=https://client-b.com
+
+# 快速切换
+echo "client-a" > assets/build.app && npm run android
+echo "client-b" > assets/build.app && npm run android
+```
+
+### 场景2：测试/生产环境
+
+```bash
+# 开发环境
+assets/app-dev/app.cfg   # loadUrl=https://dev.myapp.com
+
+# 生产环境
+assets/app-prod/app.cfg  # loadUrl=https://www.myapp.com
+```
+
+### 场景3：不同品牌的应用
+
+```bash
+# 品牌A（红色主题）
+assets/brand-a/app.cfg   # loadingBackgroundColor=#FF0000
+
+# 品牌B（蓝色主题）
+assets/brand-b/app.cfg   # loadingBackgroundColor=#0000FF
+```
+
 ## 技术栈
 
 - **React Native**: 0.82.1
@@ -262,6 +432,7 @@ cd ..
 - **React Navigation**: 用于页面导航
 - **React Native WebView**: 用于显示网页内容
 - **TypeScript**: 类型安全
+- **配置系统**: 基于Node.js的配置管理
 
 ## 许可证
 
