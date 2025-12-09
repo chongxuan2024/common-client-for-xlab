@@ -359,7 +359,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         continue-on-error: true
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.TOKEN }}
           tag_name: ${{ github.ref }}
           name: ${{ steps.build_info.outputs.app_name }} v${{ steps.build_info.outputs.app_version }} (${{ steps.build_info.outputs.build_number }})
           body: |
