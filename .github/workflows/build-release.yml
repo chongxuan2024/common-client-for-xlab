@@ -4,6 +4,11 @@ on:
   push:
     tags:
       - 'v*'
+
+permissions:
+  contents: write
+  packages: write
+
 jobs:
   check-config:
     name: Check Build Configuration
@@ -317,13 +322,68 @@ jobs:
           path: artifacts/ios
         continue-on-error: true
 
+      - name: Get build info
+        id: build_info
+        run: |
+          # 读取配置信息用于 Release 说明
+          BUILD_APP=$(cat assets/build.app)
+          APP_NAME=$(grep "^appName=" "assets/$BUILD_APP/app.cfg" | cut -d'=' -f2)
+          APP_VERSION=$(grep "^appVersion=" "assets/$BUILD_APP/app.cfg" | cut -d'=' -f2)
+          BUILD_NUMBER=$(grep "^buildNumber=" "assets/$BUILD_APP/app.cfg" | cut -d'=' -f2)
+          BUILD_ANDROID=$(grep "^buildAndroid=" "assets/$BUILD_APP/app.cfg" | cut -d'=' -f2)
+          BUILD_IOS=$(grep "^buildIOS=" "assets/$BUILD_APP/app.cfg" | cut -d'=' -f2)
+          IS_DEBUG=$(grep "^isDebug=" "assets/$BUILD_APP/app.cfg" | cut -d'=' -f2)
+          
+          echo "app_name=$APP_NAME" >> $GITHUB_OUTPUT
+          echo "app_version=$APP_VERSION" >> $GITHUB_OUTPUT
+          echo "build_number=$BUILD_NUMBER" >> $GITHUB_OUTPUT
+          
+          # 生成构建说明
+          BUILD_MODE="Release"
+          if [ "$IS_DEBUG" = "true" ]; then
+            BUILD_MODE="Debug"
+          fi
+          
+          PLATFORMS=""
+          if [ "$BUILD_ANDROID" = "true" ]; then
+            PLATFORMS="${PLATFORMS}Android "
+          fi
+          if [ "$BUILD_IOS" = "true" ]; then
+            PLATFORMS="${PLATFORMS}iOS "
+          fi
+          
+          echo "build_mode=$BUILD_MODE" >> $GITHUB_OUTPUT
+          echo "platforms=$PLATFORMS" >> $GITHUB_OUTPUT
+
       - name: Create Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
+        continue-on-error: true
         with:
-          files: |
-            artifacts/android/*
-            artifacts/ios/*
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag_name: ${{ github.ref }}
+          name: ${{ steps.build_info.outputs.app_name }} v${{ steps.build_info.outputs.app_version }} (${{ steps.build_info.outputs.build_number }})
+          body: |
+            ## 📦 ${{ steps.build_info.outputs.app_name }} - 新版本发布
+            
+            **版本信息**
+            - 版本号: `${{ steps.build_info.outputs.app_version }}`
+            - 构建号: `${{ steps.build_info.outputs.build_number }}`
+            - 构建模式: `${{ steps.build_info.outputs.build_mode }}`
+            - 构建平台: `${{ steps.build_info.outputs.platforms }}`
+            - 构建时间: `${{ github.event.head_commit.timestamp }}`
+            
+            **下载说明**
+            - Android APK: 直接下载安装
+            - Android AAB: 用于上传到 Google Play Store
+            - iOS IPA: 需要通过 TestFlight 或企业分发安装
+            - iOS Debug App: 仅用于模拟器测试
+            
+            ---
+            *本次构建由 GitHub Actions 自动生成*
           draft: false
           prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          files: |
+            artifacts/android/*.apk
+            artifacts/android/*.aab
+            artifacts/ios/*.ipa
+            artifacts/ios/*.zip
